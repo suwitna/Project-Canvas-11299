@@ -248,6 +248,3 @@ module.exports = { pushImageToUser };
 
 ---
 
-สรุปภาพรวมโครงการ **"Jarvis Factory Timeline Bot"** สำหรับอัปเดตลง **GitHub README.md** หรือใช้เป็นเอกสารนำเสนอ:
-
----
