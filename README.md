@@ -238,6 +238,181 @@ module.exports = { pushImageToUser };
 
 ---
 
+## ** สรุปภาพรวมแผนผังระบบ "Jarvis Bot" ปรับปรุงใหม่โดยเปลี่ยนโมดูลการสร้างรูปภาพจาก Python มาใช้ React + Puppeteer Engine เพื่อใช้ประโยชน์จาก UI/Component React เดิมที่มีอยู่แล้ว **
+
+```mermaid
+graph TD
+    %% User and External Services
+    User[📱 LINE App User]
+    LineOA[🟢 LINE Official Account / Messaging API]
+    Cloud[☁️ Temp Cloud Storage]
+
+    %% Internal Factory Network
+    subgraph Factory_Network [🔒 Factory Local Network - Outbound Only]
+        NodeJS[⚙️ Node.js Middleware]
+        DeepSeek[🧠 Local DeepSeek-R1 AI - Ollama]
+        SQL[(🗄️ Factory SQL Server)]
+        ReactPuppeteer[⚛️ React + Puppeteer Engine]
+    end
+
+    %% Data Flow
+    User -->|1. พิมพ์ RQ 'ขอไทม์ไลน์ CNC-002'| LineOA
+    NodeJS -->|2. HTTP GET / Polling ขาเข้า| LineOA
+    NodeJS -->|3. วิเคราะห์ Intent คำถาม| DeepSeek
+    DeepSeek -->|4. คืนค่า JSON Intent| NodeJS
+    NodeJS -->|5. Query Event Log| SQL
+    SQL -->|6. คืนค่าข้อมูลสถานะ| NodeJS
+    NodeJS -->|7. ส่ง JSON เข้า React Component + แคปหน้าจอ| ReactPuppeteer
+    ReactPuppeteer -->|8. ได้ไฟล์รูป timeline.png| NodeJS
+    NodeJS -->|9. HTTP POST Upload รูปชั่วคราว| Cloud
+    Cloud -->|10. คืนค่า HTTPS URL| NodeJS
+    NodeJS -->|11. HTTP POST Push Message + Image URL| LineOA
+    LineOA -->|12. แสดงผลรูปไทม์ไลน์ในแชต| User
+
+    %% Styling
+    style Factory_Network fill:#f4f4f6,stroke:#333,stroke-width:2px;
+    style LineOA fill:#00B900,stroke:#fff,color:#fff;
+    style DeepSeek fill:#412991,stroke:#fff,color:#fff;
+    style ReactPuppeteer fill:#61dafb,stroke:#333,color:#000;
+```
+    
+---
+
+### 💡 วิธีแปลงโค้ด React ที่มีอยู่แล้ว ให้กลายเป็น Headless Image Generator
+
+เมื่อเปลี่ยนมาใช้ React เป็น Renderer (ตัวสร้างรูป) เราจะใช้เทคนิค **Headless Browser Rendering** ร่วมกับ **Puppeteer** (หรือ Playwright) ใน Node.js ครับ
+
+```text
+[ 1. Node.js (Jarvis) ได้รับข้อมูล Data JSON ]
+                       │
+                       ▼
+[ 2. สั่ง Puppeteer เปิด React Component ใน Background (Memory) ]
+                       │
+                       ▼
+[ 3. แปะ JSON ให้ React Render เป็น UI สวยๆ (SVG / Recharts / D3.js) ]
+                       │
+                       ▼
+[ 4. Puppeteer แคปหน้าจอ (Screenshot) บันทึกเป็นไฟล์ .png ]
+                       │
+                       ▼
+[ 5. ได้รูป Dashboard.png เซฟทับลิงก์เดิม ยิงส่งเข้า LINE / FB ]
+
+```
+
+---
+
+### 🛠 โครงสร้างการนำโค้ด React มาใช้งาน (Step-by-Step)
+
+#### Step 1: โค้ด React Component ที่มีอยู่แล้ว (`TimelineDashboard.jsx`)
+
+ใช้ไลบรารีอย่าง **Recharts, D3.js, MUI** หรือ **Tailwind CSS** ในการวาดไทม์ไลน์ 30 เครื่องตามปกติ:
+
+```jsx
+// ตัวอย่าง React Component ของคุณ
+import React from 'react';
+
+export const TimelineDashboard = ({ data }) => {
+  return (
+    <div style={{ width: '1200px', padding: '20px', backgroundColor: '#0f172a', color: '#fff' }}>
+      <h2>📊 {data.title}</h2>
+      <div className="timeline-grid">
+        {data.machines.map((machine) => (
+          <div key={machine.id} style={{ display: 'flex', margin: '8px 0' }}>
+            <span style={{ width: '120px' }}>{machine.id}</span>
+            {/* วาดแถบไทม์ไลน์สีตาม Event */}
+            <div style={{ flex: 1, position: 'relative', background: '#334155', height: '24px' }}>
+              {machine.events.map((ev, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    left: `${ev.startPct}%`,
+                    width: `${ev.widthPct}%`,
+                    backgroundColor: ev.color,
+                    height: '100%'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+```
+
+---
+
+#### Step 2: ให้ Node.js ใช้ Puppeteer แคปหน้าจอ React เป็นรูปภาพ (`imageGenerator.js`)
+
+ติดตั้ง Puppeteer ใน Node.js:
+
+```bash
+npm install puppeteer
+
+```
+
+เขียนฟังก์ชันแปลง React UI เป็นไฟล์รูปภาพ PNG:
+
+```javascript
+const puppeteer = require('puppeteer');
+const path = require('path');
+
+async function generateImageFromReact(jsonData, outputPath = 'timeline_output.png') {
+  // 1. เปิด Headless Chrome ขึ้นมาในเบื้องหลัง
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ['--no-sandbox', '--disable-setuid-sandbox'] // ปลอดภัยสำหรับใช้ใน Server
+  });
+  
+  const page = await browser.newPage();
+
+  // 2. กำหนดขนาด Viewport ของรูปที่ต้องการ (เช่น 1200x800 px)
+  await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 2 }); // Scale Factor 2 เพื่อภาพคมชัด HD
+
+  // 3. โหลดหน้าเว็บ React (จะเป็น Localhost หรือ Build Static HTML ก็ได้)
+  // หรือสั่งส่งข้อมูล JSON เข้าไปใน Window State ของหน้าเว็บ
+  await page.goto('http://localhost:3000/render-timeline', { waitUntil: 'networkidle0' });
+  
+  // ส่งข้อมูล JSON เข้าไปให้ React Render
+  await page.evaluate((data) => {
+    window.renderDashboard(data);
+  }, jsonData);
+
+  // 4. สั่ง Screenshot บันทึกเป็นไฟล์ PNG ทับไฟล์เดิม (Overwrite)
+  await page.screenshot({ path: outputPath, fullPage: false });
+
+  await browser.close();
+  console.log(`SUCCESS: React Component rendered to ${outputPath}`);
+}
+
+module.exports = { generateImageFromReact };
+
+```
+
+---
+
+### 🌟 ข้อดีของการใช้โค้ด React ที่มีอยู่เดิม
+
+1. **ไม่ต้องเขียนโค้ดวาดรูปใหม่:** เอา Component ไทม์ไลน์ที่คุณเคยทำไว้แล้วในระบบเดิมมาครอบต่อได้เลย ไม่ต้องเสียเวลาพอร์ทโค้ดไปเป็น Python Matplotlib
+2. **ดีไซน์สวยสไตล์ Web UI:** จัด CSS, Flexbox, Tailwind, Dark Mode หรือใส่ Shadow ได้อิสระ ได้รูปความละเอียดสูง (Retina / HD) ที่ดูทันสมัยกว่ารูปกราฟทั่วไป
+3. **ใช้ร่วมกับ D3.js / Recharts ได้ 100%:** ถ้าโค้ด React เดิมของคุณใช้ D3.js ในการคำนวณตำแหน่งแถบเวลา SVG Puppeteer ก็จะแคปภาพออกมาได้ตรงเป๊ะตามหน้าเว็บ 100% ครับ
+
+### 💡 สิ่งที่ปรับเปลี่ยนในสถาปัตยกรรมนี้:
+
+1. **โหนด `ReactPuppeteer` (ขั้นตอนที่ 7–8):**
+* Node.js จะนำข้อมูล JSON ที่ได้จาก SQL ส่งเข้าไปให้ **React Component (UI/SVG)** เรนเดอร์เป็นหน้าเว็บใน Local Memory
+* ใช้ **Puppeteer (Headless Chrome)** แคปหน้าจอ (Screenshot) เป็นไฟล์ภาพ `timeline.png` ทันที
+
+
+2. **Reuse Existing UI Code:** ไม่ต้องเขียนโค้ดวาดรูปด้วย Python ใหม่ทั้งหมด สามารถนำโค้ด React / Recharts / D3.js ที่มีอยู่แล้วในระบบเดิมมาประยุกต์ใช้เป็น Renderer ได้ทันที
+3. **Outbound-Only 100%:** กระบวนการเรนเดอร์ทั้งหมดทำใน Local Memory (`localhost` / Local HTML File) โดยไม่มีการเปิด Inbound Port หรือส่งข้อมูลออกนอกโรงงานเช่นเดิม
+
+
+---
+
 ## 📋 Roadmaps to Presentation (2027)
 
 * [x] **Phase 1: Architecture Validation** (ยืนยันสถาปัตยกรรม Outbound-Only ร่วมกับข้อกำหนด IT)
@@ -247,8 +422,6 @@ module.exports = { pushImageToUser };
 * [ ] **Phase 5: Full Proposal Presentation** (สรุปสถิติ ผลลัพธ์ และนำเสนอผู้บริหาร/ลูกค้า)
 
 ---
-
-
 
 
 **"คู่มือการปรับแต่ง/สอน DeepSeek (Prompt & System Context Guide)"** ที่สรุปเนื้อหาจากทั้งหมดที่เราคุยกันไว้ครับ สามารถก๊อปปี้ข้อความในกรอบด้านล่างนี้ไปเก็บไว้ใน GitHub, Notepad หรือเตรียมใส่เป็น **System Prompt / Fine-Tuning Dataset**
