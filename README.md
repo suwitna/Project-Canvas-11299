@@ -547,16 +547,16 @@ You are Project Canvas 11299 JSON Engine. Always reply in valid JSON only.
 
 3. สั่งสร้างโมเดลเวอร์ชันจาวิสส่วนตัวใน Terminal:
 ```bash
-ollama create Project Canvas 11299-engine -f ./Modelfile
+ollama create Project-Canvas-11299-engine -f ./Modelfile
 
 ```
 
 
 4. เรียกใช้งานผ่าน Node.js ได้ทันที:
 ```javascript
-// Node.js จะเรียกใช้ Project Canvas 11299-engine ที่โดนสอนกติกาไว้เรียบร้อยแล้ว
+// Node.js จะเรียกใช้ Project-Canvas-11299-engine ที่โดนสอนกติกาไว้เรียบร้อยแล้ว
 axios.post('http://localhost:11434/api/generate', {
-  model: 'Project Canvas 11299-engine',
+  model: 'Project-Canvas-11299-engine',
   prompt: userQuery
 });
 
