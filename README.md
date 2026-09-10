@@ -1,5 +1,5 @@
 
-# 🚀 Jarvis Bot (PoC Spec)
+# 🚀 Project Canvas 11299
 
 ระบบ AI ผู้ช่วยตอบกลับข้อมูลโรงงานอุตสาหกรรมแบบ Interactive (Request-Response) ผ่าน **LINE Official Account (LINE OA)** เพื่อแจ้งเตือนข้อความธรรมดา (Push-Only Text) ไปสู่การส่ง **รูปภาพสรุปไทม์ไลน์สถานะเครื่องจักร (Visual Timeline Graphic)** ช่วยให้วิศวกรและผู้บริหารอ่านสถานะการผลิตได้ทันทีในแชต 
 
@@ -238,7 +238,7 @@ module.exports = { pushImageToUser };
 
 ---
 
-## ** สรุปภาพรวมแผนผังระบบ "Jarvis Bot" ปรับปรุงใหม่โดยเปลี่ยนโมดูลการสร้างรูปภาพจาก Python มาใช้ React + Puppeteer Engine เพื่อใช้ประโยชน์จาก UI/Component React เดิมที่มีอยู่แล้ว **
+## ** สรุปภาพรวมแผนผังระบบ "Project Canvas 11299" ปรับปรุงใหม่โดยเปลี่ยนโมดูลการสร้างรูปภาพจาก Python มาใช้ React + Puppeteer Engine เพื่อใช้ประโยชน์จาก UI/Component React เดิมที่มีอยู่แล้ว **
 
 ```mermaid
 graph TD
@@ -283,7 +283,7 @@ graph TD
 เมื่อเปลี่ยนมาใช้ React เป็น Renderer (ตัวสร้างรูป) เราจะใช้เทคนิค **Headless Browser Rendering** ร่วมกับ **Puppeteer** (หรือ Playwright) ใน Node.js ครับ
 
 ```text
-[ 1. Node.js (Jarvis) ได้รับข้อมูล Data JSON ]
+[ 1. Node.js (Project Canvas 11299) ได้รับข้อมูล Data JSON ]
                        │
                        ▼
 [ 2. สั่ง Puppeteer เปิด React Component ใน Background (Memory) ]
@@ -436,7 +436,7 @@ module.exports = { generateImageFromReact };
 
 ## 🎯 1. บทบาทและเป้าหมายของ AI (System Role)
 
-คุณคือ **"Jarvis"** ระบบสมองกล AI ผู้ช่วยวิเคราะห์ข้อมูลประจำโรงงานอุตสาหกรรม (Aerospace Manufacturing) และประจำบ้าน มีหน้าที่รับข้อความภาษาคน (Natural Language Input) หรือข้อมูลเหตุการณ์ (Event Logs/Form Submissions) เพื่อประมวลผลคำสั่งแล้ว **ตอบกลับเป็นโครงสร้างข้อมูล JSON เท่านั้น** เพื่อส่งต่อให้ระบบ Node.js และ Python นำไปสร้างกราฟไทม์ไลน์/Infographic
+คุณคือ **"Project Canvas 11299"** ระบบสมองกล AI ผู้ช่วยวิเคราะห์ข้อมูลประจำโรงงานอุตสาหกรรม (Aerospace Manufacturing) และประจำบ้าน มีหน้าที่รับข้อความภาษาคน (Natural Language Input) หรือข้อมูลเหตุการณ์ (Event Logs/Form Submissions) เพื่อประมวลผลคำสั่งแล้ว **ตอบกลับเป็นโครงสร้างข้อมูล JSON เท่านั้น** เพื่อส่งต่อให้ระบบ Node.js และ Python นำไปสร้างกราฟไทม์ไลน์/Infographic
 
 ---
 
@@ -455,7 +455,7 @@ module.exports = { generateImageFromReact };
 ## 🛠 3. รูปแบบ System Prompt (ใช้วางใน Ollama / Node.js API)
 
 ```text
-You are "Jarvis", an AI data parsing engine for factory automation and home assistant.
+You are "Project Canvas 11299", an AI data parsing engine for factory automation and home assistant.
 Your task is to analyze user queries or incoming event logs and generate a structured JSON object.
 
 DO NOT output conversational responses. Output ONLY valid JSON using the following schema:
@@ -539,7 +539,7 @@ PARAMETER temperature 0.1
 
 # ใส่ System Prompt ด้านบนลงไป
 SYSTEM """
-You are Jarvis JSON Engine. Always reply in valid JSON only.
+You are Project Canvas 11299 JSON Engine. Always reply in valid JSON only.
 """
 
 ```
@@ -547,16 +547,16 @@ You are Jarvis JSON Engine. Always reply in valid JSON only.
 
 3. สั่งสร้างโมเดลเวอร์ชันจาวิสส่วนตัวใน Terminal:
 ```bash
-ollama create jarvis-engine -f ./Modelfile
+ollama create Project Canvas 11299-engine -f ./Modelfile
 
 ```
 
 
 4. เรียกใช้งานผ่าน Node.js ได้ทันที:
 ```javascript
-// Node.js จะเรียกใช้ jarvis-engine ที่โดนสอนกติกาไว้เรียบร้อยแล้ว
+// Node.js จะเรียกใช้ Project Canvas 11299-engine ที่โดนสอนกติกาไว้เรียบร้อยแล้ว
 axios.post('http://localhost:11434/api/generate', {
-  model: 'jarvis-engine',
+  model: 'Project Canvas 11299-engine',
   prompt: userQuery
 });
 
